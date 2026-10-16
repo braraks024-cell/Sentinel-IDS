@@ -131,16 +131,14 @@ class IDSModel:
     @classmethod
     def from_artifacts(cls, model_dir: str | Path) -> "IDSModel | None":
         directory = Path(model_dir)
-        model_path = directory / "ann_model.keras"
+        model_path = directory / "random_forest.joblib"
         if not model_path.exists():
             return None
         with (directory / "feature_columns.json").open(encoding="utf-8") as handle:
             feature_columns = json.load(handle)
         preprocessor = joblib.load(directory / "preprocessor.joblib")
         label_encoder = joblib.load(directory / "label_encoder.joblib")
-        import tensorflow as tf
-
-        model = tf.keras.models.load_model(model_path)
+        model = joblib.load(model_path)
         metrics_path = directory / "metrics.json"
         metrics = json.loads(metrics_path.read_text(encoding="utf-8"))
         return cls(feature_columns, preprocessor, label_encoder, model, metrics["mode"])
@@ -150,7 +148,10 @@ class IDSModel:
         transformed = self.preprocessor.transform(frame)
         if hasattr(transformed, "toarray"):
             transformed = transformed.toarray().astype(np.float32)
-        probabilities = np.asarray(self.model.predict(transformed, verbose=0))
+        if hasattr(self.model, "predict_proba"):
+            probabilities = np.asarray(self.model.predict_proba(transformed))
+        else:
+            probabilities = np.asarray(self.model.predict(transformed, verbose=0))
         if probabilities.ndim == 1 or probabilities.shape[-1] == 1:
             positive = probabilities.reshape(-1)
             indices = (positive >= 0.5).astype(int)

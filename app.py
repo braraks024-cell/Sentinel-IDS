@@ -1,8 +1,8 @@
 import csv
 import io
 import json
+import os
 import re
-import sqlite3
 import uuid
 from datetime import date
 from pathlib import Path
@@ -36,6 +36,13 @@ def create_app(test_config: dict | None = None) -> Flask:
     app.config.from_object(Config)
     if test_config:
         app.config.update(test_config)
+
+    if os.environ.get("VERCEL"):
+        database_url = str(app.config["DATABASE"])
+        if not database_url.startswith(("postgres://", "postgresql://")):
+            raise RuntimeError("Set DATABASE_URL or POSTGRES_URL to a persistent PostgreSQL database.")
+        if not app.config.get("SECRET_KEY"):
+            raise RuntimeError("Set IDS_SECRET_KEY in the Vercel project environment.")
 
     app.config["MODEL_DIR"] = Path(app.config["MODEL_DIR"])
     app.config["UPLOAD_DIR"] = Path(app.config["UPLOAD_DIR"])
@@ -113,7 +120,7 @@ def create_app(test_config: dict | None = None) -> Flask:
                     )
                     connection.commit()
                 except Exception as error:
-                    if isinstance(error, sqlite3.IntegrityError) and "UNIQUE constraint failed" in str(error):
+                    if database.is_unique_violation(error):
                         flash("That username or email is already registered.", "error")
                     else:
                         raise
@@ -275,8 +282,8 @@ def create_app(test_config: dict | None = None) -> Flask:
         conditions = " AND ".join(where)
         connection = database.get_db()
         total = connection.execute(
-            f"SELECT COUNT(*) FROM analyses a WHERE {conditions}", params
-        ).fetchone()[0]
+            f"SELECT COUNT(*) AS total FROM analyses a WHERE {conditions}", params
+        ).fetchone()["total"]
         rows = connection.execute(
             f"""SELECT a.* FROM analyses a WHERE {conditions}
                 ORDER BY a.created_at DESC, a.id DESC LIMIT ? OFFSET ?""",
