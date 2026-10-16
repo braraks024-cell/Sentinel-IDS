@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}Manual prediction{% endblock %}
+{% block content %}
+<p class="eyebrow">SINGLE RECORD</p><h1>Manual traffic prediction</h1>
+<p class="muted">Enter every feature expected by the trained model. Unknown categories are safely handled by the fitted encoder.</p>
+<section class="panel">
+  <form method="post">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="field-grid">{% for name in feature_columns %}
+      <label>{{ name }}{% if name in categorical_features %}
+        <input name="{{ name }}" value="{{ values.get(name, '') }}" required>
+      {% else %}
+        <input type="number" step="any" name="{{ name }}" value="{{ values.get(name, '0') }}" required>
+      {% endif %}</label>
+    {% endfor %}</div>
+    <button class="button primary" type="submit">Predict traffic</button>
+  </form>
+</section>
+{% if result %}<section class="result-card"><p class="eyebrow">PREDICTION</p><h2 class="{{ 'green' if result.predicted_label == 'Normal' else 'red' }}">{{ result.predicted_label }} · {{ result.attack_category }}</h2><p>Confidence: {{ '%.2f'|format(result.confidence * 100) }}%</p></section>{% endif %}
+<p class="disclaimer">Educational use only. False positives and false negatives are possible.</p>
+{% endblock %}

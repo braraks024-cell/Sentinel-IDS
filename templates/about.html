@@ -1,0 +1,8 @@
+{% extends "base.html" %}
+{% block title %}About{% endblock %}
+{% block content %}
+<p class="eyebrow">ABOUT THIS PROJECT</p><h1>Deep learning for network traffic</h1>
+<section class="panel"><p>This local educational application uses an Artificial Neural Network (ANN) to classify network traffic. Random Forest and Logistic Regression provide measured baselines.</p>
+<h2>Limitations</h2><p>The model learns from the dataset used in training. NSL-KDD is dated and cannot represent all current network traffic. False positives and false negatives will occur; never use this tool as the only security control.</p>
+<h2>Privacy and safety</h2><p>Uploaded CSV data is parsed as tabular data, never executed, and removed after analysis. History is private to the logged-in account.</p></section>
+{% endblock %}

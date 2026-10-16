@@ -1,0 +1,281 @@
+==============================================================================
+PRODUCT REQUIREMENTS DOCUMENT (PRD)
+AI-Based Network Intrusion Detection System Using Deep Learning
+==============================================================================
+Version : 1.0
+Date    : 14 October 2026
+Type    : Academic Project (BCA Deep Learning Practical / Project)
+Status  : Draft for development
+
+------------------------------------------------------------------------------
+1. PRODUCT OVERVIEW
+------------------------------------------------------------------------------
+Product Name : Deep Learning-Based Network Intrusion Detection System (IDS)
+
+Summary:
+A web application that lets a user upload network traffic data (CSV) or enter
+traffic features manually, and uses a trained Artificial Neural Network (ANN)
+to classify traffic as Normal or Malicious (and, where the dataset allows, as
+DoS, Probe, R2L or U2R). Results are shown on a cybersecurity-style dashboard
+with charts, confidence scores, history and downloadable reports. The ANN is
+compared with Random Forest and Logistic Regression.
+
+One-line pitch:
+"Upload traffic, get instant AI-powered attack detection with transparent,
+honestly-evaluated results."
+
+------------------------------------------------------------------------------
+2. PROBLEM STATEMENT
+------------------------------------------------------------------------------
+Networks face continuous threats (DoS, scanning, unauthorized access).
+Signature-based IDS tools miss new or modified attacks and are hard for
+students to understand. Students need a practical, explainable project that
+shows how deep learning can learn patterns of malicious traffic from labeled
+data, with real evaluation instead of claimed accuracy.
+
+------------------------------------------------------------------------------
+3. GOALS AND NON-GOALS
+------------------------------------------------------------------------------
+Goals
+  G1. Build a working end-to-end IDS using a real public dataset.
+  G2. Train, evaluate, save and reload an ANN; compare with RF and LR.
+  G3. Provide an intuitive dashboard, prediction, history and reports.
+  G4. Demonstrate good practice: preprocessing, validation, secure auth.
+  G5. Be clear, honest and easy to explain in a viva/demo.
+
+Non-Goals (v1.0)
+  - Live packet capture or real-time network monitoring.
+  - Automatically blocking traffic or acting as a firewall.
+  - Generating or simulating attacks.
+  - Production-scale deployment, multi-tenant cloud hosting.
+  - Guaranteeing detection on modern/unseen traffic.
+
+------------------------------------------------------------------------------
+4. TARGET USERS AND PERSONAS
+------------------------------------------------------------------------------
+Persona 1 - Student / Project Presenter (Primary)
+  Needs: runnable project, clear visuals, easy explanation of workflow and
+  results for evaluation.
+
+Persona 2 - Security Learner / Analyst (Secondary)
+  Needs: upload traffic data, see which records look malicious, understand
+  confidence, export results.
+
+Persona 3 - Faculty Evaluator
+  Needs: verify that models are genuinely trained, metrics are real, code is
+  structured, and security basics are followed.
+
+------------------------------------------------------------------------------
+5. USER STORIES
+------------------------------------------------------------------------------
+US-1  As a user, I want to register and log in so my analyses are private.
+US-2  As a user, I want to upload a CSV of traffic so I can see which records
+      are normal or malicious.
+US-3  As a user, I want to enter feature values manually so I can test one
+      connection instantly.
+US-4  As a user, I want to see confidence scores so I know how certain the
+      model is.
+US-5  As a user, I want a dashboard with totals and attack distribution so I
+      get a quick overview.
+US-6  As a user, I want to see accuracy, precision, recall, F1, confusion
+      matrix and training graphs so I can judge the model.
+US-7  As a user, I want ANN vs Random Forest vs Logistic Regression comparison
+      so I understand which performs better.
+US-8  As a user, I want my past analyses stored with timestamps so I can review
+      them.
+US-9  As a user, I want to download results as CSV for my report.
+US-10 As a user, I want clear errors when my file is invalid.
+US-11 As an evaluator, I want a visible disclaimer about false positives and
+      false negatives.
+
+------------------------------------------------------------------------------
+6. SCOPE: FEATURES AND PRIORITY
+------------------------------------------------------------------------------
+MUST HAVE (MVP)
+  - Registration / login (hashed passwords)
+  - Dataset loading (NSL-KDD) and preprocessing pipeline
+  - ANN training, evaluation, save/load
+  - RF and LR comparison
+  - CSV upload with validation and batch prediction
+  - Manual prediction with confidence
+  - Dashboard (totals, distribution chart)
+  - Model evaluation page (metrics, confusion matrix, curves)
+  - Prediction history (SQLite)
+  - CSV report export
+  - Dark navy/blue responsive UI
+
+SHOULD HAVE
+  - Multiclass attack categorization (Normal, DoS, Probe, R2L, U2R)
+  - Sample data buttons for demo
+  - History filters and pagination
+  - Plain-language model explanation page
+
+COULD HAVE
+  - Feature importance chart (from Random Forest)
+  - Dark/light toggle
+  - Admin role
+
+WON'T HAVE (v1.0)
+  - Live sniffing, auto-blocking, email alerts, cloud deployment
+
+------------------------------------------------------------------------------
+7. FUNCTIONAL REQUIREMENTS (PRODUCT VIEW)
+------------------------------------------------------------------------------
+7.1 Authentication
+    Secure register/login/logout, password hashing, protected routes.
+
+7.2 Upload and Analysis
+    CSV only, size limit, column validation, same preprocessing as training,
+    per-record label + confidence, summary counts.
+
+7.3 Manual Prediction
+    Form for key features (duration, protocol_type, service, flag, src_bytes,
+    dst_bytes, count, serror_rate, etc.), instant result via AJAX, input
+    validation.
+
+7.4 Model Training (train_model.py)
+    Load -> clean -> encode -> scale -> split -> train ANN/RF/LR -> evaluate
+    on test set -> save model, scaler, encoder, metrics.json and plots.
+
+7.5 Evaluation Page
+    Accuracy, precision, recall, F1 for each model; confusion matrix; ANN
+    training/validation loss and accuracy curves; comparison chart. All values
+    come from saved real results; if absent, show "Model not trained yet".
+
+7.6 Dashboard
+    Cards: total records, normal, attacks, attack rate. Charts: attack
+    distribution (doughnut), traffic over time (bar/line). Recent alerts list.
+
+7.7 History and Reports
+    Store analyses and predictions; list with timestamp, type, counts,
+    confidence; export CSV.
+
+------------------------------------------------------------------------------
+8. NON-FUNCTIONAL REQUIREMENTS
+------------------------------------------------------------------------------
+  Performance : manual prediction < 2 s; 10k-row CSV < 30 s.
+  Usability   : intuitive navigation, clear error messages, mobile responsive.
+  Reliability : graceful handling of bad input and missing model files.
+  Security    : hashed passwords, validated uploads, parameterized SQL, no
+                execution of uploads, user data isolation.
+  Maintainability : modular folders, comments, config file.
+  Portability : runs locally on Windows/Linux/macOS via VS Code.
+  Honesty     : no fabricated metrics; limitations disclosed.
+
+------------------------------------------------------------------------------
+9. UX / UI REQUIREMENTS
+------------------------------------------------------------------------------
+Theme      : Dark navy (#0A1128-ish backgrounds), blue accents, red for attack,
+             green for normal.
+Layout     : Left sidebar or top navbar; card-based dashboard; Bootstrap grid.
+Pages      : Login, Register, Dashboard, Upload & Analyze, Manual Prediction,
+             Model Evaluation, History, About/Disclaimer.
+Components : stat cards, Chart.js charts, alert banners, confidence progress
+             bars, data tables, file drop zone.
+Responsive : usable on phone, tablet, desktop.
+Accessibility : readable contrast, labels on inputs, keyboard-friendly forms.
+
+------------------------------------------------------------------------------
+10. DATA AND MODEL REQUIREMENTS
+------------------------------------------------------------------------------
+Dataset   : NSL-KDD (primary) or CIC-IDS2017 (alternative, sampled).
+            README must include download links and placement steps.
+Preprocessing : missing values, categorical encoding, normalization,
+            stratified train/test split.
+ANN       : Input -> Dense(128, ReLU) -> Dropout -> Dense(64, ReLU) -> Dropout
+            -> Dense(32, ReLU) -> Output (Sigmoid / Softmax).
+Baselines : Random Forest, Logistic Regression.
+Metrics   : accuracy, precision, recall, F1, confusion matrix.
+Persistence : save/reload model and preprocessing objects.
+Disclaimer : predictions reflect the training data and can be wrong.
+
+------------------------------------------------------------------------------
+11. SUCCESS METRICS
+------------------------------------------------------------------------------
+Technical
+  - ANN test accuracy and F1 reported from real runs (target: competitive with
+    RF baseline; exact values depend on dataset and are not pre-claimed).
+  - Zero crashes on invalid uploads in test cases.
+  - All pages load and work locally.
+
+Project
+  - All MVP features demonstrated in a live demo.
+  - Code runs from a fresh clone using README steps only.
+  - Evaluator can reproduce training and see matching metrics.
+
+------------------------------------------------------------------------------
+12. RISKS AND MITIGATIONS
+------------------------------------------------------------------------------
+R1  Dataset is dated (NSL-KDD).        -> State limitation; mention CIC-IDS2017
+                                          as future work.
+R2  Class imbalance (R2L, U2R rare).   -> Class weights / report per-class
+                                          metrics / explain lower recall.
+R3  Upload schema mismatch.            -> Strict column validation and a
+                                          downloadable sample CSV template.
+R4  Overfitting.                       -> Dropout, early stopping, validation
+                                          split, unseen test set.
+R5  TensorFlow install issues.         -> Pin Python 3.9-3.11, pin versions in
+                                          requirements.txt, give fixes in README.
+R6  Long training time.                -> Use NSL-KDD, early stopping, optional
+                                          data subsampling.
+R7  Security flaws in uploads.         -> Extension/size checks, secure_filename,
+                                          never execute files.
+
+------------------------------------------------------------------------------
+13. DEPENDENCIES AND TECH STACK
+------------------------------------------------------------------------------
+Python 3.9-3.11 | Flask | TensorFlow/Keras | Scikit-learn | Pandas | NumPy |
+Matplotlib | Seaborn | Chart.js | Bootstrap | SQLite | VS Code
+
+------------------------------------------------------------------------------
+14. DELIVERABLES
+------------------------------------------------------------------------------
+  - Complete source code (app.py, train_model.py, modules, templates, static)
+  - requirements.txt
+  - README.md (installation, dataset setup, VS Code run steps, explanation)
+  - Trained model artifacts + metrics (generated by running training)
+  - SRS and PRD documents
+  - Sample CSV for testing
+  - Optional: project report / presentation
+
+------------------------------------------------------------------------------
+15. MILESTONES (SUGGESTED TIMELINE)
+------------------------------------------------------------------------------
+  Phase 1 (Week 1)   : Requirements, dataset download, EDA.
+  Phase 2 (Week 2)   : Preprocessing pipeline + baseline models (RF, LR).
+  Phase 3 (Week 3)   : ANN design, training, evaluation, model saving.
+  Phase 4 (Week 4)   : Flask app, authentication, SQLite, upload and manual
+                       prediction.
+  Phase 5 (Week 5)   : Dashboard, evaluation page, history, CSV export, UI
+                       polish.
+  Phase 6 (Week 6)   : Testing, documentation, demo preparation.
+
+------------------------------------------------------------------------------
+16. TEST PLAN (SUMMARY)
+------------------------------------------------------------------------------
+  - Unit: preprocessing functions, model load/predict, DB operations.
+  - Functional: register/login, upload valid/invalid CSV, manual prediction,
+    export report.
+  - Security: wrong file type, oversized file, SQL injection strings,
+    unauthorized page access.
+  - Model: evaluation on held-out test set; compare with baselines.
+  - UI: responsive checks on desktop and mobile widths.
+
+------------------------------------------------------------------------------
+17. OPEN QUESTIONS / FUTURE ENHANCEMENTS
+------------------------------------------------------------------------------
+  - Move to CIC-IDS2017 for modern attack types.
+  - Try CNN/LSTM models for comparison.
+  - Add live capture module with proper permissions and ethics review.
+  - Add explainability (SHAP) for per-prediction reasoning.
+  - Add admin panel and role-based access.
+
+------------------------------------------------------------------------------
+18. DISCLAIMER
+------------------------------------------------------------------------------
+This system is an educational project. Predictions are based on the available
+labeled dataset and may produce false positives (normal flagged as attack) and
+false negatives (attack missed). It must not be relied upon as the sole
+security control for a real network.
+
+==================================== END =====================================

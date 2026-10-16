@@ -1,0 +1,523 @@
+==============================================================================
+SOFTWARE REQUIREMENTS SPECIFICATION (SRS)
+AI-Based Network Intrusion Detection System Using Deep Learning
+==============================================================================
+Version      : 1.0
+Date         : 14 October 2026
+Document Type: Academic Project (BCA Deep Learning Practical / Project)
+Standard     : Structured along IEEE 830 / ISO/IEC/IEEE 29148 guidelines
+
+------------------------------------------------------------------------------
+TABLE OF CONTENTS
+------------------------------------------------------------------------------
+1.  Introduction
+2.  Overall Description
+3.  System Features and Functional Requirements
+4.  External Interface Requirements
+5.  Non-Functional Requirements
+6.  Data Requirements
+7.  Machine Learning / Deep Learning Requirements
+8.  System Architecture and Project Structure
+9.  Database Design
+10. Security Requirements
+11. Constraints, Assumptions and Dependencies
+12. Acceptance Criteria
+13. Appendix (Glossary, References)
+
+==============================================================================
+1. INTRODUCTION
+==============================================================================
+
+1.1 Purpose
+-----------
+This document specifies the software requirements for the "Deep Learning-Based
+Network Intrusion Detection System (IDS)". The system analyzes network traffic
+records and classifies them as NORMAL or MALICIOUS (and, with a compatible
+labeled dataset, as a specific attack category) using an Artificial Neural
+Network (ANN). It is intended for developers, evaluators, and faculty reviewing
+the project.
+
+1.2 Scope
+---------
+The system is a locally hosted Flask web application that:
+  - Authenticates users (register / login).
+  - Accepts CSV files of network traffic records and predicts the class of
+    each record.
+  - Lets users enter traffic features manually for instant prediction.
+  - Trains and evaluates an ANN (TensorFlow/Keras) and compares it with
+    Random Forest and Logistic Regression.
+  - Shows a dashboard, model metrics, prediction history, and exports CSV
+    reports.
+
+The system does NOT:
+  - Capture live packets from a network interface.
+  - Execute uploaded files or generate/simulate network attacks.
+  - Guarantee detection accuracy outside the characteristics of the
+    training dataset.
+
+1.3 Definitions, Acronyms and Abbreviations
+-------------------------------------------
+IDS     Intrusion Detection System
+ANN     Artificial Neural Network
+DoS     Denial of Service attack
+Probe   Surveillance / scanning attack (e.g., port scan)
+R2L     Remote to Local attack
+U2R     User to Root attack
+NSL-KDD Improved version of the KDD'99 intrusion detection dataset
+CIC-IDS2017 Intrusion dataset from the Canadian Institute for Cybersecurity
+SRS     Software Requirements Specification
+CSV     Comma-Separated Values
+FP / FN False Positive / False Negative
+
+1.4 References
+--------------------------------
+- NSL-KDD dataset (Canadian Institute for Cybersecurity, University of New Brunswick)
+- CIC-IDS2017 dataset (Canadian Institute for Cybersecurity)
+- TensorFlow/Keras, Flask, Scikit-learn, Pandas, NumPy official documentation
+- IEEE Std 830-1998 Recommended Practice for SRS
+
+1.5 Document Overview
+---------------------
+Section 2 gives the overall context; Section 3 lists functional requirements;
+Sections 4-6 cover interfaces, non-functional and data requirements; Section 7
+specifies the model; Sections 8-10 describe architecture, database and
+security; Sections 11-12 cover constraints and acceptance criteria.
+
+==============================================================================
+2. OVERALL DESCRIPTION
+==============================================================================
+
+2.1 Product Perspective
+-----------------------
+A standalone, self-contained web application run locally (VS Code + Python).
+It consists of a Flask backend, an SQLite database, a model-training module,
+a preprocessing module and a Bootstrap-based frontend.
+
+High-level flow:
+  User -> Browser (HTML/CSS/JS/Bootstrap/Chart.js)
+       -> Flask routes (app.py)
+       -> Preprocessing -> Saved ANN model -> Prediction
+       -> SQLite (users, predictions) -> Dashboard / Reports
+
+2.2 Product Functions (summary)
+-------------------------------
+- User registration and login with hashed passwords.
+- CSV upload, validation and batch prediction.
+- Manual single-record prediction ("real-time simulation").
+- Model training, evaluation and comparison (train_model.py).
+- Dashboard with traffic statistics and charts.
+- Prediction history with timestamps and confidence.
+- CSV report export.
+
+2.3 User Classes and Characteristics
+------------------------------------
+a) Registered User (Analyst / Student): uploads data, views results, downloads
+   reports. Basic computer skills, no ML knowledge required.
+b) Developer / Evaluator: runs train_model.py, inspects metrics and code.
+(An admin role is optional and out of scope for v1.0.)
+
+2.4 Operating Environment
+-------------------------
+- OS: Windows 10/11, Linux, or macOS
+- Python 3.9 - 3.11
+- Modern browser (Chrome, Edge, Firefox)
+- Minimum 8 GB RAM recommended; GPU not required
+- Editor: Visual Studio Code
+
+2.5 Design and Implementation Constraints
+-----------------------------------------
+- Must use the specified stack (Python, Flask, TensorFlow/Keras, Scikit-learn,
+  Pandas, NumPy, Matplotlib, Seaborn, Chart.js, Bootstrap, SQLite).
+- Must use a public, labeled dataset (NSL-KDD or CIC-IDS2017).
+- Must run fully offline after dependencies and dataset are installed.
+
+2.6 Assumptions and Dependencies
+--------------------------------
+- The user downloads the dataset manually (instructions provided in README).
+- Uploaded CSVs follow the same feature schema as the training dataset.
+- Model files exist (user has run train_model.py) before prediction pages are used.
+
+==============================================================================
+3. SYSTEM FEATURES AND FUNCTIONAL REQUIREMENTS
+==============================================================================
+Priority: H = High, M = Medium, L = Low
+
+3.1 User Authentication
+-----------------------
+FR-1.1 (H) The system shall allow a new user to register with username, email
+       and password.
+FR-1.2 (H) The system shall reject duplicate usernames/emails.
+FR-1.3 (H) The system shall store passwords only as salted hashes
+       (e.g., Werkzeug generate_password_hash).
+FR-1.4 (H) The system shall allow registered users to log in and log out.
+FR-1.5 (H) All pages except login/register shall require an authenticated
+       session; unauthenticated access shall redirect to login.
+FR-1.6 (M) The system shall show clear messages for invalid credentials.
+
+3.2 Network Traffic Analysis (CSV Upload)
+-----------------------------------------
+FR-2.1 (H) The system shall provide an upload page accepting .csv files only.
+FR-2.2 (H) The system shall limit file size (default 10 MB, configurable).
+FR-2.3 (H) The system shall validate that required feature columns exist and
+       report missing/extra columns to the user.
+FR-2.4 (H) The system shall run the same preprocessing pipeline used in
+       training on uploaded data.
+FR-2.5 (H) The system shall predict each record as Normal or Attack and show
+       the confidence score.
+FR-2.6 (M) The system shall display a summary (total, normal, attacks) after
+       analysis.
+FR-2.7 (H) The system shall never execute uploaded content and shall store
+       uploads in a separate uploads folder under sanitized names.
+
+3.3 Data Preprocessing
+----------------------
+FR-3.1 (H) Handle missing values (numerical: median; categorical: mode).
+FR-3.2 (H) Encode categorical features (protocol_type, service, flag) using
+       a fitted encoder (One-Hot or Label encoding) saved to disk.
+FR-3.3 (H) Normalize numerical features using a fitted scaler
+       (StandardScaler or MinMaxScaler) saved to disk.
+FR-3.4 (H) Split data into training and testing sets (e.g., 80/20, stratified),
+       with a validation split during training.
+FR-3.5 (M) Map detailed attack labels to categories: Normal, DoS, Probe, R2L,
+       U2R.
+FR-3.6 (H) Reuse the saved encoder/scaler at prediction time to avoid
+       training-serving mismatch.
+
+3.4 Deep Learning Model
+-----------------------
+FR-4.1 (H) Build an ANN with input, multiple hidden (Dense + ReLU) and output
+       layers.
+FR-4.2 (H) Use Sigmoid output for binary classification, Softmax for
+       multiclass.
+FR-4.3 (H) Apply Dropout (and optionally Batch Normalization / L2) to reduce
+       overfitting.
+FR-4.4 (M) Use EarlyStopping and ModelCheckpoint callbacks.
+FR-4.5 (H) Save the trained model (.keras / .h5) and reload it in Flask.
+FR-4.6 (H) Evaluate on unseen test data only.
+
+3.5 Attack Classification
+-------------------------
+FR-5.1 (M) With a compatible labeled dataset, classify traffic into Normal,
+       DoS, Probe, R2L, U2R.
+FR-5.2 (M) The system shall indicate which mode (binary or multiclass) the
+       loaded model operates in.
+FR-5.3 (L) Warn the user that rare classes (R2L, U2R) have fewer samples and
+       lower reliability.
+
+3.6 Real-Time Prediction Simulation
+-----------------------------------
+FR-6.1 (H) Provide a form where the user enters key traffic features manually.
+FR-6.2 (M) Provide a "Load sample normal / sample attack" helper for demos.
+FR-6.3 (H) Return the predicted class and confidence instantly (no page
+       reload preferred, via AJAX/fetch).
+FR-6.4 (H) Validate numeric ranges and reject invalid inputs.
+FR-6.5 (M) Save the result to prediction history.
+
+3.7 Model Evaluation
+--------------------
+FR-7.1 (H) Compute accuracy, precision, recall, F1-score on the test set.
+FR-7.2 (H) Display the confusion matrix.
+FR-7.3 (H) Display training vs. validation accuracy and loss curves.
+FR-7.4 (H) Compare ANN against Random Forest and Logistic Regression in a
+       table and bar chart.
+FR-7.5 (H) Metrics shall be read from files generated by real training
+       (e.g., metrics.json); the system shall NOT display fabricated values.
+FR-7.6 (H) If no trained model exists, the Evaluation page shall say
+       "Model not trained yet" with instructions.
+
+3.8 Dashboard
+-------------
+FR-8.1 (H) Show total analyzed records, normal count, detected attacks.
+FR-8.2 (H) Show attack distribution (pie/doughnut chart via Chart.js).
+FR-8.3 (M) Show traffic trend over time (line/bar chart).
+FR-8.4 (M) Show recent alerts for detected attacks.
+FR-8.5 (M) Show the current model's headline metrics.
+
+3.9 Prediction History
+----------------------
+FR-9.1 (H) Store every analysis (timestamp, user, source type, record count,
+       prediction, confidence) in SQLite.
+FR-9.2 (H) Display history in a sortable/paginated table.
+FR-9.3 (M) Allow filtering by date and class.
+FR-9.4 (L) Allow deletion of the user's own history entries.
+
+3.10 Downloadable Report
+------------------------
+FR-10.1 (H) Export prediction results as a CSV (record id, prediction,
+        category, confidence, timestamp).
+FR-10.2 (M) Allow export of a single analysis session or the full history.
+
+==============================================================================
+4. EXTERNAL INTERFACE REQUIREMENTS
+==============================================================================
+
+4.1 User Interface
+------------------
+- Modern cybersecurity dashboard; dark navy and blue theme.
+- Pages: Login, Register, Dashboard, Upload & Analyze, Manual Prediction,
+  Model Evaluation, Prediction History, About / Disclaimer.
+- Responsive layout (Bootstrap grid) for desktop, tablet and mobile.
+- Alert banners: red for attack detected, green for normal.
+- Confidence shown as percentage and progress bar.
+- Charts: Chart.js (dashboard), Matplotlib/Seaborn images (evaluation).
+- Visible disclaimer on prediction pages about possible false positives /
+  false negatives.
+
+4.2 Hardware Interfaces
+-----------------------
+None. Standard PC/laptop.
+
+4.3 Software Interfaces
+-----------------------
+- Flask (web framework), Flask-Login or session-based auth
+- TensorFlow/Keras (ANN)
+- Scikit-learn (RF, LR, preprocessing, metrics)
+- Pandas, NumPy (data handling)
+- Matplotlib, Seaborn (static plots)
+- Chart.js, Bootstrap (frontend via CDN or local static files)
+- SQLite via sqlite3 or SQLAlchemy
+
+4.4 Communication Interfaces
+----------------------------
+- HTTP over localhost (default http://127.0.0.1:5000).
+- JSON responses for AJAX prediction endpoints.
+
+==============================================================================
+5. NON-FUNCTIONAL REQUIREMENTS
+==============================================================================
+
+5.1 Performance
+- NFR-1: Single manual prediction response in under 2 seconds.
+- NFR-2: A 10,000-row CSV analyzed in under 30 seconds on a standard laptop.
+- NFR-3: Model is loaded once at application start, not per request.
+
+5.2 Usability
+- NFR-4: A new user can register, upload a CSV and view results without
+  documentation.
+- NFR-5: Error messages are specific and human-readable.
+
+5.3 Reliability
+- NFR-6: Invalid files/inputs never crash the application; they return a
+  friendly error.
+- NFR-7: Application handles missing model files gracefully.
+
+5.4 Maintainability
+- NFR-8: Modular code with separate folders/files for routes, preprocessing,
+  training, database, templates and static assets.
+- NFR-9: Docstrings/comments on major functions; config in a single file.
+
+5.5 Portability
+- NFR-10: Runs on Windows/Linux/macOS with a virtual environment and
+  requirements.txt.
+
+5.6 Scalability
+- NFR-11: Not required to scale beyond a single local user/small group
+  (academic scope).
+
+5.7 Transparency / Honesty
+- NFR-12: No hard-coded or fabricated accuracy figures. All reported metrics
+  derive from actual training runs.
+
+==============================================================================
+6. DATA REQUIREMENTS
+==============================================================================
+
+6.1 Dataset
+-----------
+Primary: NSL-KDD (KDDTrain+.txt, KDDTest+.txt) - 41 features + label +
+difficulty level. Alternative: CIC-IDS2017 (larger; sampling recommended).
+
+6.2 NSL-KDD Feature Groups
+--------------------------
+- Basic: duration, protocol_type, service, flag, src_bytes, dst_bytes, ...
+- Content: hot, num_failed_logins, logged_in, root_shell, ...
+- Time-based traffic: count, srv_count, serror_rate, ...
+- Host-based traffic: dst_host_count, dst_host_srv_count, ...
+
+6.3 Attack Category Mapping (NSL-KDD)
+-------------------------------------
+Normal | DoS (neptune, smurf, back, teardrop, pod, land, ...)
+Probe (satan, ipsweep, nmap, portsweep) | R2L (guess_passwd, ftp_write,
+imap, phf, ...) | U2R (buffer_overflow, rootkit, loadmodule, perl)
+
+6.4 Input CSV Format
+--------------------
+- Header row required; column names must match the training features
+  (label column optional for prediction uploads).
+- Encoding UTF-8; maximum size 10 MB (configurable).
+
+6.5 Data Storage
+----------------
+- datasets/  : raw dataset files
+- uploads/   : user-uploaded CSVs (never executed)
+- saved_models/ : model, scaler, encoder, metrics files
+- database/  : SQLite file
+
+==============================================================================
+7. MACHINE LEARNING / DEEP LEARNING REQUIREMENTS
+==============================================================================
+
+7.1 ANN Architecture (reference design)
+---------------------------------------
+Input layer (n features after encoding)
+ -> Dense(128, ReLU) -> BatchNorm (optional) -> Dropout(0.3)
+ -> Dense(64, ReLU)  -> Dropout(0.3)
+ -> Dense(32, ReLU)
+ -> Output: Dense(1, Sigmoid) [binary] or Dense(5, Softmax) [multiclass]
+Loss: binary_crossentropy / sparse_categorical_crossentropy
+Optimizer: Adam (lr = 0.001)
+Epochs: ~30-50 with EarlyStopping (patience 5-8), batch size 128-256.
+
+7.2 Baseline Models
+-------------------
+- Random Forest (e.g., 100 estimators)
+- Logistic Regression (max_iter >= 1000)
+
+7.3 Evaluation Requirements
+---------------------------
+Accuracy, Precision, Recall, F1-score (macro/weighted for multiclass),
+confusion matrix, classification report, training/validation curves,
+side-by-side comparison of ANN vs RF vs LR.
+
+7.4 Model Persistence
+---------------------
+Save: ann_model.keras, scaler.pkl, encoder.pkl, feature_columns.json,
+metrics.json, rf_model.pkl, lr_model.pkl. Reload at Flask startup.
+
+7.5 Explainability (Simple Language)
+------------------------------------
+The Evaluation page and README shall explain in plain words what each layer
+does, what each metric means, and how to read the confusion matrix.
+
+7.6 Limitations Statement
+-------------------------
+The system shall state that predictions are based on the training dataset,
+that NSL-KDD is dated, and that false positives/negatives will occur.
+
+==============================================================================
+8. SYSTEM ARCHITECTURE AND PROJECT STRUCTURE
+==============================================================================
+
+8.1 Architecture (layered)
+--------------------------
+Presentation Layer : templates/, static/ (HTML, CSS, JS, Bootstrap, Chart.js)
+Application Layer  : app.py, routes/ (Flask blueprints)
+Processing Layer   : preprocessing/ (cleaning, encoding, scaling)
+Model Layer        : models/ + train_model.py (ANN, RF, LR)
+Data Layer         : database/ (SQLite), datasets/, uploads/, saved_models/
+
+8.2 Proposed Folder Structure
+-----------------------------
+ids_project/
+|-- app.py
+|-- train_model.py
+|-- config.py
+|-- requirements.txt
+|-- README.md
+|-- routes/            (auth_routes.py, main_routes.py, predict_routes.py)
+|-- preprocessing/     (preprocess.py)
+|-- models/            (ann_model.py, baseline_models.py, evaluate.py)
+|-- database/          (db.py, schema.sql, ids.db)
+|-- datasets/          (KDDTrain+.txt, KDDTest+.txt)
+|-- saved_models/      (ann_model.keras, scaler.pkl, encoder.pkl, metrics.json)
+|-- uploads/
+|-- reports/
+|-- templates/         (base.html, login.html, register.html, dashboard.html,
+|                       upload.html, predict.html, evaluation.html, history.html)
+|-- static/            (css/, js/, img/)
+
+8.3 Key Workflows
+-----------------
+Training : Load dataset -> preprocess -> split -> train ANN/RF/LR -> evaluate
+           -> save artifacts and metrics.
+Prediction: Upload/enter data -> validate -> preprocess with saved scaler ->
+           ANN predict -> store in SQLite -> display + export.
+
+==============================================================================
+9. DATABASE DESIGN (SQLite)
+==============================================================================
+
+Table: users
+  id (PK, INTEGER AUTOINCREMENT)
+  username (TEXT, UNIQUE, NOT NULL)
+  email (TEXT, UNIQUE, NOT NULL)
+  password_hash (TEXT, NOT NULL)
+  created_at (DATETIME, DEFAULT CURRENT_TIMESTAMP)
+
+Table: analyses
+  id (PK)
+  user_id (FK -> users.id)
+  source_type (TEXT: 'csv' | 'manual')
+  filename (TEXT, nullable)
+  total_records (INTEGER)
+  normal_count (INTEGER)
+  attack_count (INTEGER)
+  created_at (DATETIME)
+
+Table: predictions
+  id (PK)
+  analysis_id (FK -> analyses.id)
+  record_index (INTEGER)
+  predicted_label (TEXT)
+  attack_category (TEXT)
+  confidence (REAL)
+  created_at (DATETIME)
+
+Use parameterized queries only (prevent SQL injection).
+
+==============================================================================
+10. SECURITY REQUIREMENTS
+==============================================================================
+SEC-1  Passwords hashed with a salted algorithm; never stored in plain text.
+SEC-2  Session-based authentication; secret key loaded from config/env.
+SEC-3  File upload: allow only .csv, check MIME/extension, sanitize filename
+       (secure_filename), enforce MAX_CONTENT_LENGTH.
+SEC-4  Uploaded files are parsed as data only and never executed.
+SEC-5  Validate all form and JSON inputs server-side.
+SEC-6  Use parameterized SQL queries.
+SEC-7  Keep uploads and model artifacts in separate directories.
+SEC-8  Users can access only their own history and reports.
+SEC-9  CSRF protection on forms (Flask-WTF recommended).
+SEC-10 The system shall not generate, simulate or launch network attacks.
+SEC-11 Debug mode disabled outside development.
+
+==============================================================================
+11. CONSTRAINTS, ASSUMPTIONS AND DEPENDENCIES
+==============================================================================
+- Academic project; single-machine deployment.
+- Dataset size and training time depend on the user's hardware.
+- NSL-KDD may not represent modern traffic; results are indicative only.
+- Internet required once for installing packages and downloading the dataset
+  (and CDN assets unless bundled locally).
+
+==============================================================================
+12. ACCEPTANCE CRITERIA
+==============================================================================
+AC-1  User can register, log in and log out; passwords are hashed in DB.
+AC-2  train_model.py runs end-to-end and produces saved model + metrics.json.
+AC-3  ANN test-set metrics and RF/LR comparison are displayed, computed from
+      real training.
+AC-4  Valid CSV upload yields per-record predictions with confidence.
+AC-5  Invalid CSV (wrong columns, too large, wrong type) shows an error.
+AC-6  Manual prediction returns result with confidence in < 2 seconds.
+AC-7  Dashboard shows correct totals and attack distribution chart.
+AC-8  History persists in SQLite with timestamps and can be exported as CSV.
+AC-9  UI is dark navy/blue and usable on mobile and desktop.
+AC-10 Disclaimer about FP/FN is visible; no fabricated metrics anywhere.
+
+==============================================================================
+13. APPENDIX
+==============================================================================
+
+13.1 Metric Definitions
+  Accuracy  = (TP + TN) / Total
+  Precision = TP / (TP + FP)
+  Recall    = TP / (TP + FN)
+  F1-score  = 2 * Precision * Recall / (Precision + Recall)
+
+13.2 Requirement Traceability (summary)
+  Auth -> FR-1.x | Upload -> FR-2.x | Preprocess -> FR-3.x | ANN -> FR-4.x
+  Attack classes -> FR-5.x | Manual -> FR-6.x | Evaluation -> FR-7.x
+  Dashboard -> FR-8.x | History -> FR-9.x | Report -> FR-10.x
+
+==================================== END =====================================

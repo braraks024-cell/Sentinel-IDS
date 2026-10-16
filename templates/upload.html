@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}Analyze CSV{% endblock %}
+{% block content %}
+<p class="eyebrow">BATCH ANALYSIS</p><h1>Upload network traffic</h1>
+<p class="muted">Upload a UTF-8 CSV with the same feature columns used to train the model. Maximum size: 10 MB.</p>
+<div class="notice">Only data is parsed. Uploaded files are never executed and are removed after analysis.</div>
+<section class="panel narrow">
+  <form method="post" enctype="multipart/form-data">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <label>Traffic CSV<input type="file" name="file" accept=".csv,text/csv" required></label>
+    <button class="button primary" type="submit">Analyze records</button>
+  </form>
+</section>
+<p class="disclaimer">Predictions may include false positives or false negatives and are indicative only.</p>
+{% endblock %}

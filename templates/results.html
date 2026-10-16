@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}Analysis results{% endblock %}
+{% block content %}
+<div class="page-heading"><div><p class="eyebrow">ANALYSIS #{{ analysis_id }}</p><h1>Prediction results</h1>
+<p class="muted">{{ total }} records analyzed. Showing {{ results|length }}.</p></div>
+<a class="button secondary" href="{{ url_for('export_report', analysis_id=analysis_id) }}">Download CSV report</a></div>
+{% if extra_columns %}<div class="notice">Ignored extra columns: {{ extra_columns|join(', ') }}</div>{% endif %}
+<div class="table-wrap panel"><table><thead><tr><th>Record</th><th>Prediction</th><th>Category</th><th>Confidence</th></tr></thead>
+<tbody>{% for item in results %}<tr><td>{{ loop.index }}</td><td><span class="pill {{ 'green-bg' if item.predicted_label == 'Normal' else 'red-bg' }}">{{ item.predicted_label }}</span></td><td>{{ item.attack_category }}</td><td>{{ '%.2f'|format(item.confidence * 100) }}%</td></tr>{% endfor %}</tbody>
+</table></div>
+<p class="disclaimer">Predictions are based on the training data and can be incorrect.</p>
+{% endblock %}

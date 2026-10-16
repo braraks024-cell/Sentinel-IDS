@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}Model evaluation{% endblock %}
+{% block content %}
+<p class="eyebrow">MODEL TRANSPARENCY</p><h1>Model evaluation</h1>
+{% if not metrics %}
+<section class="panel"><h2>Model not trained yet</h2><p class="muted">Place <code>KDDTrain+.txt</code> in <code>datasets/</code>, then run <code>python train_model.py</code>. No sample or estimated metrics are shown.</p></section>
+{% else %}
+<p class="muted">Mode: {{ metrics.mode }} · {{ metrics.training_records }} training records · {{ metrics.test_records }} held-out test records</p>
+<div class="table-wrap panel"><table><thead><tr><th>Model</th><th>Accuracy</th><th>Macro precision</th><th>Macro recall</th><th>Macro F1</th></tr></thead>
+<tbody>{% for name, score in metrics.comparison.items() %}<tr><td>{{ name|replace('_', ' ')|title }}</td><td>{{ '%.4f'|format(score.accuracy) }}</td><td>{{ '%.4f'|format(score.precision_macro) }}</td><td>{{ '%.4f'|format(score.recall_macro) }}</td><td>{{ '%.4f'|format(score.f1_macro) }}</td></tr>{% endfor %}</tbody></table></div>
+<h2>ANN confusion matrix</h2><div class="table-wrap panel"><table><thead><tr><th>Actual \ Predicted</th>{% for label in metrics.classes %}<th>{{ label }}</th>{% endfor %}</tr></thead>
+<tbody>{% for row in metrics.comparison.ann.confusion_matrix %}<tr><th>{{ metrics.classes[loop.index0] }}</th>{% for value in row %}<td>{{ value }}</td>{% endfor %}</tr>{% endfor %}</tbody></table></div>
+<h2>ANN training history</h2><div class="table-wrap panel"><table><thead><tr><th>Epoch</th><th>Training accuracy</th><th>Validation accuracy</th><th>Training loss</th><th>Validation loss</th></tr></thead>
+<tbody>{% for accuracy in metrics.training_history.get('accuracy', []) %}<tr><td>{{ loop.index }}</td><td>{{ '%.4f'|format(accuracy) }}</td><td>{{ '%.4f'|format(metrics.training_history.get('val_accuracy', [])[loop.index0]) }}</td><td>{{ '%.4f'|format(metrics.training_history.get('loss', [])[loop.index0]) }}</td><td>{{ '%.4f'|format(metrics.training_history.get('val_loss', [])[loop.index0]) }}</td></tr>{% endfor %}</tbody></table></div>
+{% endif %}
+<section class="panel"><h2>How to read these metrics</h2><p>Precision measures how often predicted attacks are attacks; recall measures how many actual attacks were detected. F1 balances the two. Confusion matrix rows are actual labels and columns are predicted labels. Dense layers learn combinations of features; dropout reduces overfitting during training.</p></section>
+{% endblock %}

@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Sentinel IDS{% endblock %} · Sentinel IDS</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="{{ url_for('index') }}">◈ Sentinel <span>IDS</span></a>
+    {% if g.user %}
+    <nav aria-label="Main navigation">
+      <a href="{{ url_for('dashboard') }}">Dashboard</a>
+      <a href="{{ url_for('upload') }}">Analyze CSV</a>
+      <a href="{{ url_for('manual_prediction') }}">Manual</a>
+      <a href="{{ url_for('evaluation') }}">Evaluation</a>
+      <a href="{{ url_for('history') }}">History</a>
+      <a href="{{ url_for('about') }}">About</a>
+      <form method="post" action="{{ url_for('logout') }}" class="inline">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button class="nav-button" type="submit">Log out</button>
+      </form>
+    </nav>
+    {% endif %}
+  </header>
+  <main class="container">
+    {% for category, message in get_flashed_messages(with_categories=true) %}
+      <div class="flash {{ category }}" role="alert">{{ message }}</div>
+    {% endfor %}
+    {% block content %}{% endblock %}
+  </main>
+  <footer class="footer">Educational IDS · Predictions can contain false positives and false negatives.</footer>
+</body>
+</html>
